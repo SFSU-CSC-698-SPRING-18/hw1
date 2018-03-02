@@ -12,6 +12,7 @@ MKLROOT = /opt/intel/composer_xe_2013.1.117/mkl
 LDLIBS = -lrt -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm
 
 */
+#include "immintrin.h"
 
 const char* dgemm_desc = "Simple blocked dgemm.";
 
@@ -20,6 +21,9 @@ const char* dgemm_desc = "Simple blocked dgemm.";
 #endif
 
 #define min(a,b) (((a)<(b))?(a):(b))
+
+
+
 
 /* This auxiliary subroutine performs a smaller dgemm operation
  *  C := C + A * B
@@ -41,24 +45,69 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
 
  static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
-  static double a[BLOCK_SIZE*BLOCK_SIZE] __attribute__ ((aligned (16)));
-      //  make a local aligned copy of A's block
+  
+  static double a[BLOCK_SIZE*BLOCK_SIZE] __attribute__ ((aligned (32)));
+  
+
+  //SIMD variables defined
+  __m256d vec1A;
+  __m256d vec1B;
+  __m256d vec1C;
+
+  __m256d vec2A;
+  __m256d vec2B;
+  __m256d vec2C;
+
+  __m256d vecCtmp;
+  __m256d vecCtmp2;
+
+  //  make a local aligned copy of A's block
+  static unsigned int prod1 = 1;
+  static unsigned int prod2 = 1;
+  static unsigned int res1 = 0;
+  static unsigned int res2 = 0;
+
   for( int j = 0; j < K; j++ ) 
     for( int i = 0; i < M; i++ )
-      a[i+j*BLOCK_SIZE] = A[i+j*lda];
+    {
+      prod1 = i*BLOCK_SIZE;
+      prod2 = j*lda;
+      res1 = prod1 + j;
+      res2 = prod2 + i;
+      a[res1] = A[res2];
+    }
 
   /* For each row i of A */
-    for (int i = 0; i < M; ++i)
+    for (int i = 0; i < M; ++i){
+
     /* For each column j of B */ 
       for (int j = 0; j < N; ++j) 
       {
+
       /* Compute C(i,j) */
         double cij = C[i+j*lda];
-        for (int k = 0; k < K; ++k)
-          cij += a[i+k*BLOCK_SIZE] * B[k+j*lda];
-        C[i+j*lda] = cij;
+        
+        for (int k = 0; k < K; k = k + 8){
+          //   cij += a[i+k*BLOCK_SIZE] * B[k+j*lda];  
+          // C[i+j*lda] = cij;
+          vec1A = _mm256_load_pd (&a[k+(i*BLOCK_SIZE)]);
+          vec1B = _mm256_loadu_pd (&B[k+(j*lda)]);
+          vec2A = _mm256_load_pd (&a[(k+4)+i*BLOCK_SIZE]);
+          vec2B = _mm256_loadu_pd (&B[(k+4)+j*lda]);
+          vec1C = _mm256_mul_pd(vec1A, vec1B);
+          vec2C = _mm256_mul_pd(vec2A, vec2B);
+          vecCtmp = _mm256_add_pd(vec1C,vec2C);
+          _mm256_store_pd(&temp[0], vecCtmp);
+          cij += temp[0];
+          cij += temp[1];
+          cij += temp[2];
+          cij += temp[3];
+        }
+        
       }
     }
+
+  }
 
 /* This routine performs a dgemm operation
  *  C := C + A * B
@@ -79,7 +128,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
            int K = min (BLOCK_SIZE, lda-k);
 
 	/* Perform individual block dgemm */
-           if((M % BLOCK_SIZE == 0) && (N % BLOCK_SIZE == 0) && (K % BLOCK_SIZE == 0)){
+           if((M == BLOCK_SIZE) && (N == BLOCK_SIZE) && (K == BLOCK_SIZE)){
             do_block_fast(lda, M, N, K, A + i + k*lda, B + k + j*lda, C + i + j*lda);
           }else{
     /* Perform individual block dgemm */
