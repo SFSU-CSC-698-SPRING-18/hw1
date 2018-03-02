@@ -46,7 +46,13 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
-  static double a[BLOCK_SIZE*BLOCK_SIZE] __attribute__((aligned (32)));
+  static unsigned int prod1 = 1;
+  static unsigned int prod2 = 1;
+  static unsigned int res1 = 0;
+  static unsigned int res2 = 0;
+
+  prod1 = BLOCK_SIZE * BLOCK_SIZE;
+  static double a[prod1] __attribute__((aligned (32)));
   static double temp[4] __attribute__((aligned (32)));
 
   //SIMD variables defined
@@ -62,35 +68,36 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   __m256d vecCtmp2;
 
   //  make a local aligned copy of A's block
-  static unsigned int prod1 = 1;
-  static unsigned int prod2 = 1;
-  static unsigned int res1 = 0;
-  static unsigned int res2 = 0;
-
-  for( int j = 0; j < K; j++ ) 
+  
+  for( int j = 0; j < K; j++ ) {
+    prod2 = j*lda;
     for( int i = 0; i < M; i++ )
     {
       prod1 = i*BLOCK_SIZE;
-      prod2 = j*lda;
       res1 = prod1 + j;
       res2 = prod2 + i;
       a[res1] = A[res2];
     }
+  }
 
   /* For each row i of A */
     for (int i = 0; i < M; ++i){
-
+      
+      prod1 = i*BLOCK_SIZE;
     /* For each column j of B */ 
       for (int j = 0; j < N; ++j) 
       {
 
       /* Compute C(i,j) */
-        double cij = C[i+j*lda];
+        prod2 = j*lda;
+        res2 = i + prod2;
+        
+        double cij = C[res2]; //C[i+j*lda];
         
         for (int k = 0; k < K; k = k + 8){
           //   cij += a[i+k*BLOCK_SIZE] * B[k+j*lda];  
-          prod1 = i*BLOCK_SIZE;
-          prod2 = j*lda;
+          
+          //prod2 = j*lda;
           res1 = k + prod1;           vec1A = _mm256_load_pd  (&a[res1]);       //k+(i*BLOCK_SIZE)
           res2 = k + prod2;           vec1B = _mm256_loadu_pd (&B[res2]);       //k+(j*lda)
           res1 = (k + 4) + prod1;     vec2A = _mm256_load_pd  (&a[res1]);       //(k+4)+i*BLOCK_SIZE
@@ -105,7 +112,9 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           cij += temp[3];
         }
 
-        C[i+j*lda] = cij;
+        res2 = i + prod2;
+        C[res2] = cij;
+        //C[i+j*lda] = cij;
       }
     }
 
