@@ -43,7 +43,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
    }
  }
 
- static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
+ static inline void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
   static unsigned int prod1 = 1;
@@ -64,7 +64,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   __m256d vec2C;
 
   __m256d vecCtmp;
-  __m256d vecCtmp2;
+//  __m256d vecCtmp2;
 
   //  make a local aligned copy of A's block
   
