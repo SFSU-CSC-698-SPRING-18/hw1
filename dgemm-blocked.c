@@ -43,7 +43,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
    }
  }
 
- static inline void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
+ static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
    unsigned int prod1 = 1;
