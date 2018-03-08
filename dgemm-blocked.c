@@ -99,12 +99,16 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           //prod2 = j*lda;
           res1 = k + prod1;           vec1A = _mm256_load_pd  (&a[res1]);       //k+(i*BLOCK_SIZE)
           res2 = k + prod2;           vec1B = _mm256_loadu_pd (&B[res2]);       //k+(j*lda)
-          res1 = (k + 4) + prod1;     vec2A = _mm256_load_pd  (&a[res1]);       //(k+4)+i*BLOCK_SIZE
-          res2 = (k + 4) + prod2;     vec2B = _mm256_loadu_pd (&B[res2]);       //(k+4)+j*lda
+          res1 = res1 + 4             vec2A = _mm256_load_pd  (&a[res1]);       //(k+4)+i*BLOCK_SIZE   (k + 4) + prod1;
+          res2 = res2 + 4;            vec2B = _mm256_loadu_pd (&B[res2]);       //(k+4)+j*lda   (k + 4) + prod2;
+          
           vec1C = _mm256_mul_pd(vec1A, vec1B);
           vec2C = _mm256_mul_pd(vec2A, vec2B);
+          
           vecCtmp = _mm256_add_pd(vec1C, vec2C);
+          
           _mm256_store_pd(&temp[0], vecCtmp);
+          
           cij += temp[0];
           cij += temp[1];
           cij += temp[2];
@@ -139,9 +143,9 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
 
            int mul_k = k * lda;
            int mul_j = j * lda;
-           int res_A = A + i + mul_k;
-           int res_C = C + i + mul_j;
-           int res_B = B + k + mul_j;
+           double* res_A = A + (i + mul_k);
+           double* res_C = C + (i + mul_j);
+           double* res_B = B + (k + mul_j);
 
 	/* Perform individual block dgemm */
            if((M == BLOCK_SIZE) && (N == BLOCK_SIZE) && (K == BLOCK_SIZE)){
@@ -149,7 +153,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
             do_block_fast(lda, M, N, K, res_A, res_B, res_C);
           }else{
     /* Perform individual block dgemm */
-            do_block_fast(lda, M, N, K, res_A, res_B, res_C);
+            do_block(lda, M, N, K, res_A, res_B, res_C);
           }
         }
       }
