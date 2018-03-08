@@ -46,10 +46,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
-   unsigned int prod1 = 1;
-   unsigned int prod2 = 1;
-   unsigned int res1 = 0;
-   unsigned int res2 = 0;
+  register unsigned int prod1 = 1;
+  register unsigned int prod2 = 1;
+  register unsigned int res1 = 0;
+  register unsigned int res2 = 0;
 
   static double a[BLOCK_SIZE * BLOCK_SIZE] __attribute__((aligned (32)));
   static double temp[4] __attribute__((aligned (32)));
