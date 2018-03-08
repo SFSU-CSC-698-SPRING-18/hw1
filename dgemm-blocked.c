@@ -91,7 +91,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
         prod2 = j * lda;
         res2 = i + prod2;
         
-        static double cij = C[res2]; //C[i+j*lda];
+        double cij = C[res2]; //C[i+j*lda];
         
         for (int k = 0; k < K; k = k + 8){
           //   cij += a[i+k*BLOCK_SIZE] * B[k+j*lda];  
@@ -134,7 +134,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
       for (int j = 0; j < lda; j += BLOCK_SIZE){
 
         int mul_j = j * lda;
-        
+
       /* Accumulate block dgemms into block of C */
         for (int k = 0; k < lda; k += BLOCK_SIZE)
         {
@@ -144,7 +144,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
          int K = min (BLOCK_SIZE, lda-k);
 
          int mul_k = k * lda;
-         
+
          double* res_A = A + (i + mul_k);
          double* res_C = C + (i + mul_j);
          double* res_B = B + (k + mul_j);
