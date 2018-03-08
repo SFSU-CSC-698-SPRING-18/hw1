@@ -56,10 +56,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
-   unsigned int prod1 = 1;
-   unsigned int prod2 = 1;
-   unsigned int res1 = 0;
-   unsigned int res2 = 0;
+  static unsigned int prod1 = 1;
+  static unsigned int prod2 = 1;
+  static unsigned int res1 = 0;
+  static unsigned int res2 = 0;
 
   static double a[BLOCK_SIZE * BLOCK_SIZE] __attribute__((aligned (32)));
   static double temp[4] __attribute__((aligned (32)));
@@ -91,7 +91,6 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
 
   /* For each row i of A */
     for (int i = 0; i < M; ++i){
-      
       prod1 = i * BLOCK_SIZE;
     /* For each column j of B */ 
       for (int j = 0; j < N; ++j) 
