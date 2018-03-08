@@ -17,7 +17,7 @@ LDLIBS = -lrt -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKL
 const char* dgemm_desc = "Simple blocked dgemm.";
 
 #if !defined(BLOCK_SIZE)
-#define BLOCK_SIZE 64
+#define BLOCK_SIZE 32
 #endif
 
 #define min(a,b) (((a)<(b))?(a):(b))
@@ -91,11 +91,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
         prod2 = j * lda;
         res2 = i + prod2;
         
-        double cij = C[res2]; //C[i+j*lda];
+        static double cij = C[res2]; //C[i+j*lda];
         
         for (int k = 0; k < K; k = k + 8){
           //   cij += a[i+k*BLOCK_SIZE] * B[k+j*lda];  
-          
           //prod2 = j*lda;
           res1 = k + prod1;           vec1A = _mm256_load_pd  (&a[res1]);       //k+(i*BLOCK_SIZE)
           res2 = k + prod2;           vec1B = _mm256_loadu_pd (&B[res2]);       //k+(j*lda)
@@ -133,6 +132,9 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
       for (int i = 0; i < lda; i += BLOCK_SIZE)
     /* For each block-column of B */
         for (int j = 0; j < lda; j += BLOCK_SIZE)
+
+          int mul_j = j * lda;
+      
       /* Accumulate block dgemms into block of C */
           for (int k = 0; k < lda; k += BLOCK_SIZE)
           {
@@ -142,7 +144,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
            int K = min (BLOCK_SIZE, lda-k);
 
            int mul_k = k * lda;
-           int mul_j = j * lda;
+           
            double* res_A = A + (i + mul_k);
            double* res_C = C + (i + mul_j);
            double* res_B = B + (k + mul_j);
