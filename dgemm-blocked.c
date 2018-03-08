@@ -46,10 +46,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  static inline void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
-  static unsigned int prod1 = 1;
-  static unsigned int prod2 = 1;
-  static unsigned int res1 = 0;
-  static unsigned int res2 = 0;
+  register unsigned int prod1 = 1;
+  register unsigned int prod2 = 1;
+  register unsigned int res1 = 0;
+  register unsigned int res2 = 0;
 
   static double a[BLOCK_SIZE * BLOCK_SIZE] __attribute__((aligned (32)));
   static double temp[4] __attribute__((aligned (32)));
@@ -137,12 +137,19 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
            int N = min (BLOCK_SIZE, lda-j);
            int K = min (BLOCK_SIZE, lda-k);
 
+           int mul_k = k*lda;
+           int mul_j = j*lda;
+           int res_A = A + i + mul_k;
+           int res_C = C + i + mul_j;
+           int res_B = B + k + mul_j;
+
 	/* Perform individual block dgemm */
            if((M == BLOCK_SIZE) && (N == BLOCK_SIZE) && (K == BLOCK_SIZE)){
-            do_block_fast(lda, M, N, K, A + i + k*lda, B + k + j*lda, C + i + j*lda);
+            //do_block_fast(lda, M, N, K, A + i + k*lda, B + k + j*lda, C + i + j*lda);
+            do_block_fast(lda, M, N, K, res_A, res_B, res_C);
           }else{
     /* Perform individual block dgemm */
-            do_block(lda, M, N, K, A + i + k*lda, B + k + j*lda, C + i + j*lda);
+            do_block_fast(lda, M, N, K, res_A, res_B, res_C);
           }
         }
       }
