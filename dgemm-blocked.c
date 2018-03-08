@@ -30,26 +30,36 @@ const char* dgemm_desc = "Simple blocked dgemm.";
  * where C is M-by-N, A is M-by-K, and B is K-by-N. */
 static void do_block (int lda, int M, int N, int K, double* A, double* B, double* C)
 {
+  static unsigned int mul_j_lda;
+  static unsigned int res_i;
+  static unsigned int prod_k_lda;
+  //static unsigned int 
   /* For each row i of A */
-  for (int i = 0; i < M; ++i)
+  for (int i = 0; i < M; ++i){
     /* For each column j of B */ 
     for (int j = 0; j < N; ++j) 
     {
       /* Compute C(i,j) */
-      double cij = C[i+j*lda];
-      for (int k = 0; k < K; ++k)
-       cij += A[i+k*lda] * B[k+j*lda];
-     C[i+j*lda] = cij;
+      mul_j_lda = j * lda;
+      res_i = i + mul_j_lda;
+      double cij = C[res_i];
+
+      for (int k = 0; k < K; ++k){
+        prod_k_lda = k * lda;
+        cij += A[i + prod_k_lda] * B[k + mul_j_lda];
+      }
+     C[i + mul_j_lda] = cij;
    }
  }
+}
 
  static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
-  register unsigned int prod1 = 1;
-  register unsigned int prod2 = 1;
-  register unsigned int res1 = 0;
-  register unsigned int res2 = 0;
+   unsigned int prod1 = 1;
+   unsigned int prod2 = 1;
+   unsigned int res1 = 0;
+   unsigned int res2 = 0;
 
   static double a[BLOCK_SIZE * BLOCK_SIZE] __attribute__((aligned (32)));
   static double temp[4] __attribute__((aligned (32)));
@@ -98,7 +108,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           //prod2 = j*lda;
           res1 = k + prod1;           vec1A = _mm256_load_pd  (&a[res1]);       //k+(i*BLOCK_SIZE)
           res2 = k + prod2;           vec1B = _mm256_loadu_pd (&B[res2]);       //k+(j*lda)
-          res1 = res1 + 4;             vec2A = _mm256_load_pd  (&a[res1]);       //(k+4)+i*BLOCK_SIZE   (k + 4) + prod1;
+          res1 = res1 + 4;            vec2A = _mm256_load_pd  (&a[res1]);       //(k+4)+i*BLOCK_SIZE   (k + 4) + prod1;
           res2 = res2 + 4;            vec2B = _mm256_loadu_pd (&B[res2]);       //(k+4)+j*lda   (k + 4) + prod2;
           
           vec1C = _mm256_mul_pd(vec1A, vec1B);
@@ -128,12 +138,14 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  * On exit, A and B maintain their input values. */  
   void square_dgemm (int lda, double* A, double* B, double* C)
   {
+    int mul_j;
+    int mul_k;
   /* For each block-row of A */ 
     for (int i = 0; i < lda; i += BLOCK_SIZE)
     /* For each block-column of B */
       for (int j = 0; j < lda; j += BLOCK_SIZE){
 
-        int mul_j = j * lda;
+        mul_j = j * lda;
 
       /* Accumulate block dgemms into block of C */
         for (int k = 0; k < lda; k += BLOCK_SIZE)
@@ -143,14 +155,14 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
          int N = min (BLOCK_SIZE, lda-j);
          int K = min (BLOCK_SIZE, lda-k);
 
-         int mul_k = k * lda;
+         mul_k = k * lda;
 
          double* res_A = A + (i + mul_k);
          double* res_C = C + (i + mul_j);
          double* res_B = B + (k + mul_j);
 
 	/* Perform individual block dgemm */
-         if((M == BLOCK_SIZE) && (N == BLOCK_SIZE) && (K == BLOCK_SIZE)){
+        if((M == BLOCK_SIZE) && (N == BLOCK_SIZE) && (K == BLOCK_SIZE)){
             //do_block_fast(lda, M, N, K, A + i + k*lda, B + k + j*lda, C + i + j*lda);
           do_block_fast(lda, M, N, K, res_A, res_B, res_C);
         }else{
