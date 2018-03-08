@@ -46,10 +46,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  static inline void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
  {
   
-  register unsigned int prod1 = 1;
-  register unsigned int prod2 = 1;
-  register unsigned int res1 = 0;
-  register unsigned int res2 = 0;
+   unsigned int prod1 = 1;
+   unsigned int prod2 = 1;
+   unsigned int res1 = 0;
+   unsigned int res2 = 0;
 
   static double a[BLOCK_SIZE * BLOCK_SIZE] __attribute__((aligned (32)));
   static double temp[4] __attribute__((aligned (32)));
@@ -69,10 +69,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   //  make a local aligned copy of A's block
   
   for( int j = 0; j < K; j++ ) {
-    prod2 = j*lda;
+    prod2 = j * lda;
     for( int i = 0; i < M; i++ )
     {
-      prod1 = i*BLOCK_SIZE;
+      prod1 = i * BLOCK_SIZE;
       res1 = prod1 + j;
       res2 = prod2 + i;
       a[res1] = A[res2];
@@ -82,13 +82,13 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   /* For each row i of A */
     for (int i = 0; i < M; ++i){
       
-      prod1 = i*BLOCK_SIZE;
+      prod1 = i * BLOCK_SIZE;
     /* For each column j of B */ 
       for (int j = 0; j < N; ++j) 
       {
 
       /* Compute C(i,j) */
-        prod2 = j*lda;
+        prod2 = j * lda;
         res2 = i + prod2;
         
         double cij = C[res2]; //C[i+j*lda];
@@ -137,8 +137,8 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
            int N = min (BLOCK_SIZE, lda-j);
            int K = min (BLOCK_SIZE, lda-k);
 
-           int mul_k = k*lda;
-           int mul_j = j*lda;
+           int mul_k = k * lda;
+           int mul_j = j * lda;
            int res_A = A + i + mul_k;
            int res_C = C + i + mul_j;
            int res_B = B + k + mul_j;
