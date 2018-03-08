@@ -155,7 +155,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           do_block_fast(lda, M, N, K, res_A, res_B, res_C);
         }else{
     /* Perform individual block dgemm */
-          do_block(lda, M, N, K, res_A, res_B, res_C);
+          do_block_fast(lda, M, N, K, res_A, res_B, res_C);
         }
       }
     }
