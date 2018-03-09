@@ -119,17 +119,17 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           
           _mm256_store_pd(&temp[0], vecCtmp);
           
-          vec128Ctmp1 = _mm_load_pd(&temp[0]);
-          vec128Ctmp2 = _mm_load_pd(&temp[2]);
+          //vec128Ctmp1 = _mm_load_pd(&temp[0]);
+          //vec128Ctmp2 = _mm_load_pd(&temp[2]);
 
-          vecCtmp2 = _mm_add_pd(vec128Ctmp1, vec128Ctmp2);
+          //vecCtmp2 = _mm_add_pd(vec128Ctmp1, vec128Ctmp2);
 
-          _mm_storeu_pd(&temp[0], vecCtmp2);
+          //_mm_storeu_pd(&temp[0], vecCtmp2);
 
-          cij += temp[0] + temp[1];
-          //cij += temp[1];
-          // cij += temp[2];
-          // cij += temp[3];
+          cij += temp[0];
+          cij += temp[1];
+          cij += temp[2];
+          cij += temp[3];
         }
 
         res2 = i + prod2;
