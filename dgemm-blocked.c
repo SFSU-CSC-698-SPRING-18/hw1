@@ -63,6 +63,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   static double temp[4] __attribute__((aligned (32)));
 
   //SIMD variables defined
+
+  __m128d vec128Ctmp1;
+  __m128d vec128Ctmp2;
+
   __m256d vec1A;
   __m256d vec1B;
   __m256d vec1C;
@@ -72,7 +76,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   __m256d vec2C;
 
   __m256d vecCtmp;
-//  __m256d vecCtmp2;
+  __m128d vecCtmp2;
 
   //  make a local aligned copy of A's block
   
@@ -115,10 +119,17 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           
           _mm256_store_pd(&temp[0], vecCtmp);
           
-          cij += temp[0];
-          cij += temp[1];
-          cij += temp[2];
-          cij += temp[3];
+          vec128Ctmp1 = _mm_load_pd(&temp[0]);
+          vec128Ctmp2 = _mm_load_pd(&temp[2]);
+
+          vecCtmp2 = _mm_add_pd(vec128Ctmp1, vec128Ctmp2);
+
+          _mm_storeu_pd(&temp[0], vecCtmp2);
+
+          cij += temp[0] + temp[1];
+          //cij += temp[1];
+          // cij += temp[2];
+          // cij += temp[3];
         }
 
         res2 = i + prod2;
