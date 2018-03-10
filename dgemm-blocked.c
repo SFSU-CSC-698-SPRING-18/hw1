@@ -55,12 +55,17 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  {
   
   unsigned int prod1 = 1;
+  unsigned int prod11 = 1
   unsigned int prod2 = 1;
+  unsigned int prod22 = 1;
   unsigned int res1 = 0;
+  unsigned int res11 = 0;
   unsigned int res2 = 0;
+  unsigned int res22 = 0;
 
   static double a[BLOCK_SIZE * BLOCK_SIZE] __attribute__((aligned (32)));
   static double temp[4] __attribute__((aligned (32)));
+  //static double temp1[4] __attribute__((aligned(32)));
 
   //SIMD variables defined
 
@@ -92,18 +97,22 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   }
 
   /* For each row i of A */
-    for (int i = 0; i < M; ++i){
+    for (int i = 0; i < M; i = i+2){
       prod1 = i * BLOCK_SIZE;
+      prod11 = (i + 1) * BLOCK_SIZE;
     /* For each column j of B */ 
-      for (int j = 0; j < N; ++j) 
+      for (int j = 0; j < N; j = j+2) 
       {
 
       /* Compute C(i,j) */
         prod2 = j * lda;
+        prod22 = (j+1) * lda;
         res2 = i + prod2;
+        res22 = i + 1 + prod22;
         
         double cij = C[res2]; //C[i+j*lda];
-        
+        double ciijj = C[res22];
+
         for (int k = 0; k < K; k = k + 8){
           //   cij += a[i+k*BLOCK_SIZE] * B[k+j*lda];  
           //prod2 = j*lda;
@@ -119,21 +128,40 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           
           _mm256_store_pd(&temp[0], vecCtmp);
           
-          //vec128Ctmp1 = _mm_load_pd(&temp[0]);
+          cij += temp[0];
+          cij += temp[1];
+          cij += temp[2];
+          cij += temp[3];
+
+
+          res11 = k + prod11; vec1A = _mm256_load_pd  (&a[res11]);
+          res22 = k + prod22; vec1B = _mm256_loadu_pd (&B[res22]);
+          res11 = res11 + 4;  vec2A = _mm256_load_pd  (&a[res11]);
+          res22 = res22 + 4;  vec2B = _mm256_loadu_pd (&B[res22]);
+
+          vec1C = _mm256_mul_pd(vec1A, vec1B);
+          vec2C = _mm256_mul_pd(vec2A, vec2B);
+          vecCtmp = _mm256_add_pd(vec1C, vec2C);
+          
+          _mm256_store_pd(&temp[0], vecCtmp);
+          ciijj += temp[0];
+          ciijj += temp[1];
+          ciijj += temp[2];
+          ciijj += temp[3];
+
+           //vec128Ctmp1 = _mm_load_pd(&temp[0]);
           //vec128Ctmp2 = _mm_load_pd(&temp[2]);
 
           //vecCtmp2 = _mm_add_pd(vec128Ctmp1, vec128Ctmp2);
 
           //_mm_storeu_pd(&temp[0], vecCtmp2);
 
-          cij += temp[0];
-          cij += temp[1];
-          cij += temp[2];
-          cij += temp[3];
         }
 
         res2 = i + prod2;
+        res22 = i + 1 + prod22;
         C[res2] = cij;
+        C[res22] = ciijj;
         //C[i+j*lda] = cij;
       }
     }
