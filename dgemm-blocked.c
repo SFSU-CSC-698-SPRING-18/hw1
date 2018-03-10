@@ -97,11 +97,11 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   }
 
   /* For each row i of A */
-    for (int i = 0; i < M; i = i+2){
+    for (int i = 0; i < M-1; i = i+2){
       prod1 = i * BLOCK_SIZE;
       prod11 = (i + 1) * BLOCK_SIZE;
     /* For each column j of B */ 
-      for (int j = 0; j < N; j = j+2) 
+      for (int j = 0; j < N-1; j = j+2) 
       {
 
       /* Compute C(i,j) */
