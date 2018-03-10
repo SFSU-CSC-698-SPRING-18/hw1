@@ -55,7 +55,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
  {
   
   unsigned int prod1 = 1;
-  unsigned int prod11 = 1
+  unsigned int prod11 = 1;
   unsigned int prod2 = 1;
   unsigned int prod22 = 1;
   unsigned int res1 = 0;
@@ -81,7 +81,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   __m256d vec2C;
 
   __m256d vecCtmp;
-  __m128d vecCtmp2;
+  //__m128d vecCtmp2;
 
   //  make a local aligned copy of A's block
   
