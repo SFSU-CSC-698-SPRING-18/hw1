@@ -155,7 +155,7 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
         C[res_ij]   = cij;
         C[res_iij]  = ciij;
         C[res_ijj]  = cijj;
-        C[res_iijj] = ciijj
+        C[res_iijj] = ciijj;
       }
     }
 
