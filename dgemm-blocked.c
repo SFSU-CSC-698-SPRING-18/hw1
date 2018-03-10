@@ -81,10 +81,10 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
           
   _mm256_store_pd(&temp[0], vecCtmp);
           
-  cij += temp[0];
-  cij += temp[1];
-  cij += temp[2];
-  cij += temp[3];
+  *cij += temp[0];
+  *cij += temp[1];
+  *cij += temp[2];
+  *cij += temp[3];
  }
 
  static void do_block_fast(int lda, int M, int N, int K, double* A, double* B, double* C)
@@ -104,6 +104,9 @@ static void do_block (int lda, int M, int N, int K, double* A, double* B, double
   double ciij;
   double cijj;
   double ciijj;
+
+  unsigned int res1 = 0;
+  unsigned int res2 = 0;
 
   static double a[BLOCK_SIZE * BLOCK_SIZE] __attribute__((aligned (32)));
   //static double temp[4] __attribute__((aligned (32)));
